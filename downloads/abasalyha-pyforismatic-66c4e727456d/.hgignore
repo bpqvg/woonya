@@ -1,0 +1,13 @@
+syntax: glob
+*.pyc
+*.pyo
+*.log
+*~
+*.orig
+dist/*
+Thumbs.db
+.settings
+.project
+.pydevproject
+.settings
+.idea
