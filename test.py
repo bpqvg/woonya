@@ -49,70 +49,70 @@
 #     duration = time.time() - start_time
 #     print(f"Downloaded {len(sites)} sites in {duration} seconds")
 
-import asyncio
-import aiohttp
-from time import time
-#from aiosocks.connector import ProxyConnector, ProxyClientRequest
-#from aiohttp_proxy import ProxyConnector, ProxyType
-import requests
-from aiohttp_socks import ProxyType, ProxyConnector, ChainProxyConnector
+# import asyncio
+# import aiohttp
+# from time import time
+# #from aiosocks.connector import ProxyConnector, ProxyClientRequest
+# #from aiohttp_proxy import ProxyConnector, ProxyType
+# import requests
+# from aiohttp_socks import ProxyType, ProxyConnector, ChainProxyConnector
 
-headers = {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:45.0) Gecko/20100101 Firefox/45.0',
-    }
+# headers = {
+#         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:45.0) Gecko/20100101 Firefox/45.0',
+#     }
 
-async def print_response(data):
-    print(data)
+# async def print_response(data):
+#     print(data)
 
-async def fetch_content(url, session):
-    try:
-        async with session.get(url, allow_redirects=True) as response:
-            data = await response.read()
-            await print_response(data)
-    except aiohttp.ClientError as err:
-        print(err, 'cant connect with this proxy')
+# async def fetch_content(url, session):
+#     try:
+#         async with session.get(url, allow_redirects=True) as response:
+#             data = await response.read()
+#             await print_response(data)
+#     except aiohttp.ClientError as err:
+#         print(err, 'cant connect with this proxy')
 
-async def print_range():
-    for i in range(10):
-        print(i)
-        await asyncio.sleep(0.2)
+# async def print_range():
+#     for i in range(10):
+#         print(i)
+#         await asyncio.sleep(0.2)
 
-async def main():
-    url = 'https://google.com'
-    tasks = []
+# async def main():
+#     url = 'https://google.com'
+#     tasks = []
 
-    #task = asyncio.create_task(print_range())
-    #tasks.append(task)
+#     #task = asyncio.create_task(print_range())
+#     #tasks.append(task)
 
-    conn = ProxyConnector(
-        proxy_type=ProxyType.SOCKS5,
-        host='206.81.2.118',
-        port='1080',
-        rdns=True,
-        ssl=False
+#     conn = ProxyConnector(
+#         proxy_type=ProxyType.SOCKS5,
+#         host='206.81.2.118',
+#         port='1080',
+#         rdns=True,
+#         ssl=False
 
-    )
-    #conn = ProxyConnector.from_url('socks5://72.11.148.222:56533')
+#     )
+#     #conn = ProxyConnector.from_url('socks5://72.11.148.222:56533')
 
-    async with aiohttp.ClientSession(connector=conn) as session:  # connector=aiohttp.TCPConnector(ssl=False)
-        for i in range(10):
-            task = asyncio.create_task(fetch_content(url, session))
-            tasks.append(task)
+#     async with aiohttp.ClientSession(connector=conn) as session:  # connector=aiohttp.TCPConnector(ssl=False)
+#         for i in range(10):
+#             task = asyncio.create_task(fetch_content(url, session))
+#             tasks.append(task)
 
 
-        await asyncio.gather(*tasks)
+#         await asyncio.gather(*tasks)
 
-if __name__ == "__main__":
-    t0 = time()
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-    loop = asyncio.get_event_loop()
-    try:
-        loop.run_until_complete(main())
-        loop.run_until_complete(asyncio.sleep(2.0))
-    finally:
-        #loop.close()
-        pass
-    print(time()-t0)
+# if __name__ == "__main__":
+#     t0 = time()
+#     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+#     loop = asyncio.get_event_loop()
+#     try:
+#         loop.run_until_complete(main())
+#         loop.run_until_complete(asyncio.sleep(2.0))
+#     finally:
+#         #loop.close()
+#         pass
+#     print(time()-t0)
 
 
 
@@ -147,3 +147,59 @@ if __name__ == "__main__":
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Подключаем модуль threading для работы с потоками
+import threading
+# и модули requests, shutil, os для скачивания файлов из сети
+import requests, shutil, os
+
+# Функция скачивания файла которую мы будем выполнять
+# в новом потоке на входе номер потока и URL скачиваемого файла
+def down(nomer, url):
+    # Выводим на экран сообщение о старте нового потока
+    print(str(nomer)+' поток ('+url+')\n')
+    # Получаем имя файла из URL
+    (dirname, filename) = os.path.split(url)
+    # Запускаем скачивание через GET запрос
+    r = requests.get(url, stream=True)
+    # Если код ответа сервера 200 (сервер доступен)
+    if r.status_code == 200:
+        #r.raw.decode_content = True
+        print(r.status_code)
+        # Открываем файл в режиме побайтовой записи
+        #with open(filename, 'wb') as f:
+        #    r.raw.decode_content = True
+            # Созхраняем скачиваемый поток в файл
+        #    shutil.copyfileobj(r.raw, f)
+        # Выводим сообщение что поток закончил загрузку
+        print(str(nomer) + " поток закончил загрузку\n")
+        
+
+# Список URL которые будем скачивать
+urls = ["http://www.irs.gov/pub/irs-pdf/f1040.pdf",
+            "http://www.irs.gov/pub/irs-pdf/f1040a.pdf",
+            "http://www.irs.gov/pub/irs-pdf/f1040ez.pdf",
+            "http://www.irs.gov/pub/irs-pdf/f1040es.pdf",
+            "http://www.irs.gov/pub/irs-pdf/f1040sb.pdf"]
+
+# Цикл который создаст столько потоков сколько файлов нужно скачать
+for nomer, url in enumerate(urls):
+    # Запускаем поток указав целью функцию down и ее аргументы
+    # к nomer прибавляем 1 чтобы номер потока начинался не с нуля
+    threading.Thread(target=down, args = [nomer+1, url]).start()
+
+# Выводим сообщение демонстрирующее что основная программа
+# продолжает работать отдельно от созданных потоков
+print('\nЕще не завершились потоки а программа уже продолжается\n')
