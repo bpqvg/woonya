@@ -149,6 +149,19 @@
 
 
 
+#Get Proxy from spys.one txt format file without their api
+#def GetProxy():
+    #response = requests.get('http://spys.me/proxy.txt', headers=headers)
+    #async with aiohttp.ClientSession() as session:
+     #   async with session.get('http://spys.me/proxy.txt', headers=headers) as response:
+      #      #print((await response.content.read()).decode('utf-8').split('\n')[8::][1:-2])
+       #     proxy = (await response.content.read()).decode('utf-8').split('\n')[8::]  # [1].split(' ')[0]
+        #    #print(proxy)
+         #   proxies = []
+          #  #print(proxy)
+           # for i in proxy[1:-2]:
+            #    proxies.append(i.split(' ')[0])
+            #return proxies
 
 
 

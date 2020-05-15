@@ -17,7 +17,7 @@ from lxml import etree
 #from threading import Thread
 import threading
 #from bs4 import BeautifulSoup as B
-from time import sleep, time
+from time import sleep, time, ctime
 
 headers = {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:45.0) Gecko/20100101 Firefox/45.0',
@@ -25,13 +25,51 @@ headers = {
 
 fileDir = os.path.dirname(os.path.realpath('__file__'))
 
-token = 'b884b8a3e2557fc59feca21ac1c0002f4f542ae41672b02659b472573027f35466e5081cac81c712e9993'
+token = ''
 
 vk_bot_session = vk_api.VkApi(token=token)
 bot_api = vk_bot_session.get_api()
 bot_upload = VkUpload(vk_bot_session)
 
-#loop = asyncio.get_event_loop()
+bot_services = ['https://damn.ru']
+is_proxy_available = False
+available_proxy = []
+
+def CheckAndAddProxy(proxy):
+    global is_proxy_available
+    global available_proxy
+    try:
+        #print('trying', proxy, ' : ', end='')
+        #response = requests.get('https://damn.ru/?name={}&sex={}'.format(name, sex), proxies={'http': proxy, 'https': proxy}, headers=headers, stream=True, timeout=5)
+        temp = ''.join((random.choice('qwertyuiopasdfghjklzzxcvbnm1234567890') for i in range(random.randint(3, 10))))
+        response = requests.get('https://damn.ru/words?search={}'.format(temp), proxies={'http': proxy, 'https': proxy}, headers=headers, stream=True, timeout=1)
+        #print(response.status_code)
+        #print(response.content.decode('utf-8'))
+        #message = response.status_code
+        if response.status_code:
+            is_proxy_available = True
+            if proxy not in available_proxy:
+                available_proxy.append(proxy)
+                # print('ProxyUpdater | YES YES YES YES')
+            if len(available_proxy) > 10:
+                available_proxy.pop(0)
+    except:
+        #print('ProxyUpdater | Cant connect with this proxy, continue')
+        pass
+
+def ProxyUpdater():
+    global is_proxy_available
+    global available_proxy
+    is_proxy_available = False
+    while(True):
+        proxies = GetProxies2()       
+        #available_proxy = []
+        for proxy in proxies:
+            threading.Thread(target=CheckAndAddProxy, args=[proxy]).start()
+            
+        sleep(30)
+        #print(available_proxy)
+
 
 def VkBot_SendMessage(function, function_args, chat_id, message="", attachments=','):
     if function == None:
@@ -51,10 +89,10 @@ def GetRandomQuote(language='ru'):
         'lang': language,
         'key': ""
     }
-    print('до.....')
+    # print('до.....')
     response = requests.get('http://api.forismatic.com/api/1.0/', send_data)
     json_response = response.json()
-    print('после.....')
+    # print('после.....')
     quote = json_response['quoteText']
     author = json_response['quoteAuthor']
     if author == '':
@@ -75,18 +113,7 @@ def GetRandomCommentFromZaebaloRu():
     text = comment_texts[random_comment_id].text_content().lstrip().rstrip()
     return '{}\n{}'.format(header, text)
 
-#def GetProxy():
-    #response = requests.get('http://spys.me/proxy.txt', headers=headers)
-    #async with aiohttp.ClientSession() as session:
-     #   async with session.get('http://spys.me/proxy.txt', headers=headers) as response:
-      #      #print((await response.content.read()).decode('utf-8').split('\n')[8::][1:-2])
-       #     proxy = (await response.content.read()).decode('utf-8').split('\n')[8::]  # [1].split(' ')[0]
-        #    #print(proxy)
-         #   proxies = []
-          #  #print(proxy)
-           # for i in proxy[1:-2]:
-            #    proxies.append(i.split(' ')[0])
-            #return proxies
+
 def GetProxies():
     response = requests.get('https://free-proxy-list.net/', headers=headers, stream=True)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -100,21 +127,47 @@ def GetProxies():
     #print(list_proxies)
     return list_proxies
 
+def GetProxies2():
+    response = requests.get('http://spys.me/proxy.txt', headers=headers)
+    #print((await response.content.read()).decode('utf-8').split('\n')[8::][1:-2])
+    proxy = response.content.decode('utf-8').split('\n')[8::]  # [1].split(' ')[0]
+    #print(proxy)
+    proxies = []
+    #print(proxy)
+    for i in proxy[1:-2]:
+        proxies.append(i.split(' ')[0])
+    return proxies
+
+def GetWellTriedProxies():
+    if is_proxy_available == False:
+        return False
+    else:
+        return True
+
 def GetDamn(name, sex):
-    proxies = GetProxies()
-    #print('got proxy', proxies)
-    message = 'Прости, не смог оскорбить данного господина =('
-    for proxy in proxies:
+    # print(is_proxy_available)
+    # print(available_proxy)
+    message = 'Не смог оскорбить, утерял дар речи.'
+    if is_proxy_available == False:
+        return message
+    #proxies = GetProxies()
+    proxies = available_proxy
+    for proxy in reversed(proxies):
         try:
-            print('trying', proxy, ' : ', end='')
-            response = requests.get('https://damn.ru/?name={}&sex={}'.format(name, sex), proxies={'http': proxy, 'https': proxy}, headers=headers, stream=True, timeout=5)
+            # print('trying', proxy, ' : ', end='')
+            response = requests.get('https://damn.ru/?name={}&sex={}'.format(name, sex), proxies={'http': proxy, 'https': proxy}, headers=headers, stream=True, timeout=2)
             print(response.status_code)
-            print(response.content.decode('utf-8'))
+            #print(response.content.decode('utf-8'))
             message = response.status_code
             break
         except:
-            print('Cant connect with this proxy, continue')
+            print('Def | GetDamn | Cant connect with this proxy, continue')
     return message
+
+def GetCurrentDateAndTime():
+    datetime = ctime()
+    # datetime = str(datetime.datetime.now())
+    return datetime
 
 def main():
     while True:
@@ -126,40 +179,38 @@ def main():
                         if event.message.text[0] == '.':
                             message = event.message.text[1::]
                             if message == 'помощь':
-                                help_bot = """помощь - текущая команда помощи\nоботе - информация о боте\nвремя - текущая дата и время по МСК\nцитата - случайная цитата\nзаебало - случайный комментарий с сервиса zaebalo.ru\nобосрать - обосрать человека"""
-                                VkBot_SendMessage(function=None, function_args=None, chat_id=event.chat_id, message=help_bot)
+                                help_bot = """помощь - текущая команда помощи\nоботе - информация о боте\nвремя - текущая дата и время по МСК\nцитата - случайная цитата\nзаебало - случайный комментарий с сервиса zaebalo.ru\nобосрать - обозвать кого-либо"""
+                                #VkBot_SendMessage(function=None, function_args=None, chat_id=event.chat_id, message=help_bot)
+                                threading.Thread(target=VkBot_SendMessage, args=[None, None, event.chat_id, help_bot, None]).start()
                             elif message == 'оботе':
                                 about_bot = """Бот написан на Python.\nРазработчик: @sudo.rmrf\nРеппозиторий на github: github.com/sonerzerone/woonya\n~~~ Наслаждайтесь ~~~\nУзнать команды: .помощь"""
-                                t0 = time()
-                                VkBot_SendMessage(function=None, function_args=None, chat_id=event.chat_id, message=about_bot)
-                                print(time()-t0)
+                                #VkBot_SendMessage(function=None, function_args=None, chat_id=event.chat_id, message=about_bot)
+                                threading.Thread(target=VkBot_SendMessage, args=[None, None, event.chat_id, about_bot, None]).start()
                             elif message == 'время':
-                                VkBot_SendMessage(function=None, function_args=None, chat_id=event.chat_id, message=str(datetime.datetime.now()))
+                                #VkBot_SendMessage(function=None, function_args=None, chat_id=event.chat_id, message=str(datetime.datetime.now()))
+                                threading.Thread(target=VkBot_SendMessage, args=[GetCurrentDateAndTime, None, event.chat_id, None, None]).start()
                             elif message == 'цитата':
                                 language = 'ru'
-                                VkBot_SendMessage(function=None, function_args=None, chat_id=event.chat_id, message=GetRandomQuote(language))
-                                #VkBot_SendMessage(function=SendRandomQuote, function_args=(language), chat_id=event.chat_id)
+                                #VkBot_SendMessage(function=None, function_args=None, chat_id=event.chat_id, message=GetRandomQuote(language))
+                                threading.Thread(target=VkBot_SendMessage, args=[GetRandomQuote, None, event.chat_id, None, None]).start()                            
                             elif message == 'gavno':
-                                print('test')
-                                attachments = []
-                                pic = Image.open(os.path.join(fileDir, 'static/images/memes/Трансформаторная-будка.jpg'))
-                                print(pic)
-                                image = bot_upload.photo_messages(pic)  # [0]
-                                print(image)
-                                attachments.append('photo{}_{}'.format(image['owned_id'], image['id']))
+                                pass
+                                # print('test')
+                                # attachments = []
+                                # pic = Image.open(os.path.join(fileDir, 'static/images/memes/Трансформаторная-будка.jpg'))
+                                # print(pic)
+                                # image = bot_upload.photo_messages(pic)  # [0]
+                                # print(image)
+                                # attachments.append('photo{}_{}'.format(image['owned_id'], image['id']))
                                 #VkBot_SendMessage(event.chat_id, message="соси хуй", attachments=','.join(attachments))
                             elif message == 'заебало':
                                 #VkBot_SendMessage(event.chat_id, GetRandomCommentFromZaebaloRu())
-                                VkBot_SendMessage(function=GetRandomCommentFromZaebaloRu, function_args=(None), chat_id=event.chat_id)
+                                #VkBot_SendMessage(function=GetRandomCommentFromZaebaloRu, function_args=(None), chat_id=event.chat_id)
+                                threading.Thread(target=VkBot_SendMessage, args=[GetRandomCommentFromZaebaloRu, None, event.chat_id, None, None]).start()
                             elif message == 'обосрать':
-                                #VkBot_SendMessage(event.chat_id, message="Да иди ты к хуям блять хуяндопало ты тракторское сдохни и умри чтобы о тебе твоя мать не вспомнила, припизденыш ебаный блять")
-                                #threading.Thread(target=GetDamn, args=['name', 'm']).start()
-                                VkBot_SendMessage(function=GetDamn, function_args=('name', 'm'), chat_id=event.chat_id)
-                                #VkBot_SendMessage(event.chat_id, GetDamn('name', 'm'))
-                                #print('testtesttesttest')
-                                #print('opa')
-                                #VkBot_SendMessage(event.chat_id, GetDamn('name', 'm'))
-                                
+                                #VkBot_SendMessage(function=GetDamn, function_args=('name', 'm'), chat_id=event.chat_id)
+                                threading.Thread(target=VkBot_SendMessage, args=[GetDamn, ('name', 'm'), event.chat_id, None, None]).start()
+                                # function, function_args, chat_id, message, attachments
 
 
                     except:
@@ -172,6 +223,7 @@ def main():
             continue
 
 if __name__ == "__main__":
+    threading.Thread(target=ProxyUpdater, args=[]).start()
     main()
 
 
